@@ -18,7 +18,7 @@ scaler = joblib.load("models/scaler.pkl")
 if 'final_data' not in st.session_state:
     st.session_state.final_data = False
 
-def treath_csv_data(csv_file):
+def treat_csv_data(csv_file):
     if csv_file is None:
         st.error("Por favor, insira um arquivo csv com os dados dos clientes.")
         return
@@ -36,21 +36,20 @@ def treath_csv_data(csv_file):
         st.error("O arquivo csv não segue o template correto.")
         return
     
-    batch_data['loan_percent_income'] = batch_data['loan_amnt'] / batch_data['person_income'].replace(0, np.nan)
-    
-    batch_data[categorical_cols] = le.transform(batch_data[categorical_cols])
+    for col in categorical_cols:
+        batch_data[col] = le.fit_transform(batch_data[col])
 
     batch_data[numerical_cols] = scaler.fit_transform(batch_data[numerical_cols])
 
     st.session_state.final_data = True
     return batch_data
 
-def treath_data(data):
+def treat_data(data):
     if data is None:
         st.error("Por favor, insira os dados do cliente.")
         return
 
-    data['loan_percent_income'] = data['loan_amnt'] / data['person_income'].replace(0, np.nan)
+    # data['loan_percent_income'] = data['loan_amnt'] / data['person_income'].replace(0, np.nan)
 
     for i in data:
         st.write(i)
@@ -100,6 +99,7 @@ with oneEntry:
                                 ['PERSONAL', 'EDUCATION', 'MEDICAL', 'VENTURE',
                                   'HOMEIMPROVEMENT', 'DEBTCONSOLIDATION'])
     loan_int_rate = float(st.number_input("Taxa de juros do empréstimo", min_value=0.0, max_value=100.0, step=0.001))
+    loan_percent_income = float(st.number_input("Valor do empréstimo como porcentagem da renda anual", min_value=0.0, step=0.001))
     cb_person_cred_hist_length = float(st.number_input("Comprimento do histórico de crédito em anos", min_value=0.0, step=0.001))
     credit_score = st.number_input("Score de crédito", min_value=0)
     previous_loan_defaults_on_file = st.selectbox("Indicador de inadimplência de empréstimos anteriores", 
@@ -115,14 +115,14 @@ with oneEntry:
         'loan_amnt': [loan_amnt],
         'loan_intent': [loan_intent],
         'loan_int_rate': [loan_int_rate],
-        'loan_percent_income': [np.nan],
+        'loan_percent_income': [loan_percent_income],
         'cb_person_cred_hist_length': [cb_person_cred_hist_length],
         'credit_score': [credit_score],
         'previous_loan_defaults_on_file': [previous_loan_defaults_on_file]
     })
 
     if st.columns([2,1,2])[1].button("Classificar", use_container_width=True, key="uniqueBtn"):
-        final_data = treath_data(data)
+        final_data = treat_data(data)
 
 with batchEntry:
     uploaded_file = st.file_uploader("Anexe um arquivo csv com os dados dos clientes para classificação",
@@ -140,13 +140,14 @@ with batchEntry:
         'loan_amnt': [],
         'loan_intent': [],
         'loan_int_rate': [],
+        'loan_percent_income': [],
         'cb_person_cred_hist_length': [],
         'credit_score': [],
         'previous_loan_defaults_on_file': []
     }))
 
     if st.columns([2,1,2])[1].button("Classificar", use_container_width=True, key="batchBtn"):
-        final_data = treath_csv_data(uploaded_file)
+        final_data = treat_csv_data(uploaded_file)
 
 
 if st.session_state.final_data:
@@ -156,7 +157,6 @@ if st.session_state.final_data:
     prediction = model.predict(input_features)
 
     for index, status in enumerate(prediction):
-        st.write(prediction[index])
         if status == 1:
             st.success(f"Pessoa {index} aprovado para o empréstimo")
         else:
