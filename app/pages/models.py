@@ -31,7 +31,7 @@ def treat_csv_data(csv_file):
     
     if batch_data.columns.tolist() != ['person_age', 'person_gender', 'person_education', 'person_income',
                                 'person_emp_exp', 'person_home_ownership', 'loan_amnt', 'loan_intent',
-                                'loan_int_rate', 'cb_person_cred_hist_length',
+                                'loan_int_rate', 'loan_percent_income', 'cb_person_cred_hist_length',
                                 'credit_score', 'previous_loan_defaults_on_file']:
         st.error("O arquivo csv não segue o template correto.")
         return
@@ -48,13 +48,6 @@ def treat_data(data):
     if data is None:
         st.error("Por favor, insira os dados do cliente.")
         return
-
-    # data['loan_percent_income'] = data['loan_amnt'] / data['person_income'].replace(0, np.nan)
-
-    for i in data:
-        st.write(i)
-    for rows in data.iterrows():
-        st.write(rows)
 
     for col in categorical_cols:
         data[col] = le.fit_transform(data[col])
@@ -78,8 +71,6 @@ else:
     model = rf_model
 
 uploaded_file = None
-
-
 oneEntry, batchEntry = st.tabs(["Entrada única", "Entrada em lotes"])
 
 with oneEntry:
@@ -153,8 +144,8 @@ with batchEntry:
 if st.session_state.final_data:
     st.subheader("Resultado da classificação")
     
-    input_features = np.array(final_data)
-    prediction = model.predict(input_features)
+    # input_features = np.array(final_data)
+    prediction = model.predict(final_data)
 
     for index, status in enumerate(prediction):
         if status == 1:
