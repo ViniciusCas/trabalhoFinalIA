@@ -1,5 +1,5 @@
 kaggle.json
 /.venv
-/models/*
+# /models/*
 /.ipynb_checkpoints
 
